@@ -1,0 +1,9 @@
+[
+  {
+    "id": "abc-123",
+    "studentName": "Exemple Étudiant",
+    "course": "B3 S1 Git",
+    "githubUrl": "https://github.com/exemple/projet",
+    "grade": 16
+  }
+]

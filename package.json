@@ -6,8 +6,8 @@
   "main": "index.js",
   "scripts": {
     "prepare": "husky install",
-    "start": "ts-node src/server.ts",
-    "dev": "nodemon src/server.ts",
+    "start": "node --loader ts-node/esm src/server.ts",
+    "dev": "nodemon --exec \"node --loader ts-node/esm\" src/server.ts",
     "test": "echo \"Warning: no tests defined\" && exit 0",
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "lint:fix": "eslint \"{src,test}/**/*.ts\" --fix",

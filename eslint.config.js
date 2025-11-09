@@ -18,14 +18,9 @@ export default tseslint.config(
       prettier: prettierPlugin,
     },
     rules: {
-      // Règle Prettier pour forcer le formatage lors du linting
       'prettier/prettier': 'error',
-      //  (variable inutilisée)
       '@typescript-eslint/no-unused-vars': 'error',
-
-      // "@typescript-eslint/no-explicit-any": "off",
     },
   },
-  // Doit être en dernier pour s'assurer que Prettier est la source de vérité pour le style
   prettierConfig,
 );
