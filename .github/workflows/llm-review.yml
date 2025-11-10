@@ -9,11 +9,15 @@ jobs:
   review_and_notify:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read     # Nécessaire pour actions/checkout
+      issues: write      # Nécessaire pour commenter sur la PR (via l'API des issues)
+      pull-requests: write # Meilleure pratique pour les actions PR
+
     steps:
       - name: 1. Checkout du Code
         uses: actions/checkout@v4
         with:
-          # Assure que nous récupérons l'historique nécessaire pour le diff
           fetch-depth: 0
 
       - name: 2. Calcul du Diff de la PR
@@ -39,12 +43,12 @@ jobs:
           EOF_PROMPT
           )
           
+          # Note: Remplacer ceci par votre appel réel à l'API Gemini
           LLM_RESPONSE="Félicitations pour l'ajout de la route. **Point d'amélioration :** Le filtrage par cours devrait être mis en cache pour les requêtes fréquentes."
           
           echo "LLM_RESPONSE=$LLM_RESPONSE" >> $GITHUB_ENV
 
       - name: 4. Commenter sur la Pull Request
-        # L'indentation de 'uses' et 'with' doit être alignée avec 'name'
         uses: actions/github-script@v7
         with:
           script: |
@@ -59,7 +63,6 @@ jobs:
           LLM_RESPONSE: ${{ env.LLM_RESPONSE }} # Passe la variable LLM_RESPONSE
 
       - name: 5. Envoyer la Notification par Email
-        # L'indentation de 'uses' et 'with' doit être alignée avec 'name'
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
@@ -70,8 +73,6 @@ jobs:
           body: |
             Voici la revue générée par l'IA :
             ${{ env.LLM_RESPONSE }}
-            
-            # Correction: 'to:', 'from:', et 'convert_markdown_to_html:' sont des arguments au même niveau que 'subject', 'body', etc., pas des sous-éléments de 'body'.
           to: ${{ secrets.TEAM_EMAIL_LIST }}
           from: ${{ secrets.MAIL_USERNAME }}
           convert_markdown_to_html: true
