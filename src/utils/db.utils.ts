@@ -4,6 +4,7 @@ import * as path from 'path';
 const DB_PATH = path.join(process.cwd(), 'db.json');
 
 // Interface pour typer les données de projet
+// test
 export interface Project {
   id: string;
   studentName: string;
