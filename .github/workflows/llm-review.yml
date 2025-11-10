@@ -55,8 +55,8 @@ jobs:
               repo: context.repo.repo,
               body: comment
             });
-          env:
-            LLM_RESPONSE: ${{ env.LLM_RESPONSE }} # Passe la variable LLM_RESPONSE
+        env:
+          LLM_RESPONSE: ${{ env.LLM_RESPONSE }} # Passe la variable LLM_RESPONSE
 
       - name: 5. Envoyer la Notification par Email
         # L'indentation de 'uses' et 'with' doit être alignée avec 'name'
