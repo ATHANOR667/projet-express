@@ -39,7 +39,7 @@ jobs:
                 repo: context.repo.repo,
                 body: comment
               });
-            env:
+        env:
                 LLM_RESPONSE: ${{ env.LLM_RESPONSE }}
 
       - name: 5. Envoyer la Notification par Email
