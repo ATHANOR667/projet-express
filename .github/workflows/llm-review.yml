@@ -3,7 +3,7 @@ name: Revue de Code par IA (LLM) et Notification
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, synchronize] # Déclenchement à l'ouverture ou à la mise à jour de la PR
     branches:
       - develop
 
@@ -33,8 +33,15 @@ jobs:
           # Construction du prompt
           PROMPT="Tu es un relecteur de code expert. Analyse ce diff. Si le code est bon, fournis des pistes d'amélioration. Si le code contient des bugs, liste-les. Réponds en français. Voici le diff: \n\n${{ env.PR_DIFF }}"
           
+          # Appel à l'API Gemini (Utilisation de curl pour un appel HTTP simple)
+          # REMPLACEMENT: Ici, vous devrez utiliser un script Python/JS ou une action dédiée. 
+          # Pour la démonstration, nous simulons l'appel avec un placeholder.
+          
+          # Exemple théorique d'appel (requiert un script pour gérer JSON et CURL correctement)
+          # L'équipe devra implémenter ce script ou utiliser une action tierce.
+          # LLM_RESPONSE=$(curl -s -X POST "https://gemini.googleapis.com/v1/..." -H "Authorization: Bearer ${{ secrets.GEMINI_API_KEY }}" -d "{...}")
+
           # SIMULATION DE LA RÉPONSE (À Remplacer)
-          # Note: La simulation est faite ici pour éviter l'échec dû à l'absence de l'implémentation de l'appel curl/API
           LLM_RESPONSE="Félicitations pour l'ajout de la route. **Point d'amélioration :** Le filtrage par cours devrait être mis en cache pour les requêtes fréquentes."
           
           # Stocker la réponse dans une variable d'environnement
