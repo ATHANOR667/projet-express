@@ -34,7 +34,9 @@ router.get('/', async (req: Request, res: Response) => {
     res.json(projects);
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: 'Erreur interne du serveur lors de la liste.' });
+    res
+      .status(500)
+      .json({ error: 'Erreur interne du serveur lors de la liste.' });
   }
 });
 
@@ -60,7 +62,9 @@ router.post('/', async (req: Request, res: Response) => {
     res.status(201).json(newProject);
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: 'Erreur interne du serveur lors de la soumission.' });
+    res
+      .status(500)
+      .json({ error: 'Erreur interne du serveur lors de la soumission.' });
   }
 });
 
@@ -96,7 +100,9 @@ router.put('/:id/grade', async (req: Request, res: Response) => {
     const index = projects.findIndex((p) => p.id === id);
 
     if (index === -1) {
-      return res.status(404).json({ error: 'Projet non trouvé pour la notation.' });
+      return res
+        .status(404)
+        .json({ error: 'Projet non trouvé pour la notation.' });
     }
 
     projects[index].grade = grade;
@@ -104,7 +110,9 @@ router.put('/:id/grade', async (req: Request, res: Response) => {
     res.json(projects[index]);
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: 'Erreur interne du serveur lors de la notation.' });
+    res
+      .status(500)
+      .json({ error: 'Erreur interne du serveur lors de la notation.' });
   }
 });
 
@@ -117,14 +125,18 @@ router.delete('/:id', async (req: Request, res: Response) => {
     const updatedProjects = projects.filter((p) => p.id !== id);
 
     if (updatedProjects.length === initialLength) {
-      return res.status(404).json({ error: 'Projet non trouvé pour la suppression.' });
+      return res
+        .status(404)
+        .json({ error: 'Projet non trouvé pour la suppression.' });
     }
 
     await writeDb(updatedProjects);
     res.status(204).send();
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: 'Erreur interne du serveur lors de la suppression.' });
+    res
+      .status(500)
+      .json({ error: 'Erreur interne du serveur lors de la suppression.' });
   }
 });
 
@@ -135,7 +147,7 @@ router.get('/course/:courseName', async (req: Request, res: Response) => {
     const projects: Project[] = await readDb();
     const normalizedCourseName = courseName.trim().toLowerCase();
     const filteredProjects = projects.filter(
-      (p) => p.course.trim().toLowerCase() === normalizedCourseName
+      (p) => p.course.trim().toLowerCase() === normalizedCourseName,
     );
 
     if (filteredProjects.length === 0) {
@@ -147,7 +159,9 @@ router.get('/course/:courseName', async (req: Request, res: Response) => {
     res.json(filteredProjects);
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: 'Erreur interne du serveur lors du filtrage par cours.' });
+    res
+      .status(500)
+      .json({ error: 'Erreur interne du serveur lors du filtrage par cours.' });
   }
 });
 
