@@ -9,7 +9,7 @@ jobs:
   review_and_notify:
     runs-on: ubuntu-latest
 
-    # 1. Correction des Permissions (pour l'étape 4)
+    # Correction des Permissions pour permettre les commentaires (étape 4)
     permissions:
       contents: read
       issues: write
@@ -24,41 +24,81 @@ jobs:
       - name: 2. Calcul du Diff de la PR
         id: diff
         run: |
+          # Calcule le diff
           DIFF=$(git diff ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
           
+          # Stocke le diff pour l'étape suivante
           echo "PR_DIFF<<EOF" >> $GITHUB_ENV
           echo "$DIFF" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
+      # 3. NOUVELLE ÉTAPE : Appel réel à l'API Gemini
       - name: 3. Appel à l'IA (Gemini API) et Récupération de la Revue
         id: llm_call
-        run: |
-          PROMPT=$(cat << 'EOF_PROMPT'
-          Tu es un relecteur de code expert. Analyse ce diff. Si le code est bon, fournis des pistes d'amélioration. Si le code contient des bugs, liste-les. Réponds en français. Voici le diff:
-          ${{ env.PR_DIFF }}
-          EOF_PROMPT
-          )
-          
-          LLM_RESPONSE="Félicitations pour l'ajout de la route. **Point d'amélioration :** Le filtrage par cours devrait être mis en cache pour les requêtes fréquentes."
-          
-          echo "LLM_RESPONSE=$LLM_RESPONSE" >> $GITHUB_ENV
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Configuration et récupération des données
+            const diff = process.env.PR_DIFF;
+            const apiKey = process.env.GEMINI_API_KEY;
+            const modelName = 'gemini-2.5-flash';
+
+            const prompt = `Tu es un relecteur de code expert. Analyse ce diff. Si le code est bon, fournis des pistes d'amélioration. Si le code contient des bugs, liste-les. Réponds en français. Voici le diff:\n${diff}`;
+
+            // Appel de l'API Gemini
+            async function getGeminiReview() {
+              const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':generateContent?key=' + apiKey, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  contents: [{ role: "user", parts: [{ text: prompt }] }],
+                  config: {
+                      systemInstruction: "Tu es un relecteur de code expert. Réponds en français. Ne réponds qu'avec la revue de code.",
+                      temperature: 0.1
+                  }
+                }),
+              });
+
+              const data = await response.json();
+            
+              if (!response.ok || !data.candidates || data.candidates.length === 0) {
+                 // Gérer l'erreur si l'appel échoue
+                 console.error('Erreur de l\'API Gemini:', data);
+                 // Si le code Gemini est vide, on retourne un message d'erreur
+                 return `❌ Erreur de l'API Gemini. Statut : ${response.status}. Vérifiez la clé API et les logs.`;
+              }
+
+              // Retourne la réponse texte
+              return data.candidates[0].content.parts[0].text;
+            }
+            
+            const llmResponse = await getGeminiReview();
+            
+            // Stocke la réponse comme sortie de cette étape
+            core.setOutput('llm_response', llmResponse);
+
+        env:
+          PR_DIFF: ${{ env.PR_DIFF }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: 4. Commenter sur la Pull Request
         uses: actions/github-script@v7
         with:
           script: |
-            const comment = `🤖 **Revue de code automatisée par LLM :**\n\n${process.env.LLM_RESPONSE}\n\n*Review effectuée pour @${{ github.actor }}*`;
+            // Utilisation de la sortie de l'étape 3
+            const llmResponse = `${{ steps.llm_call.outputs.llm_response }}`; 
+            const comment = `🤖 **Revue de code automatisée par LLM :**\n\n${llmResponse}\n\n*Review effectuée pour @${{ github.actor }}*`;
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: comment
             });
-        env:
-          LLM_RESPONSE: ${{ env.LLM_RESPONSE }}
 
       - name: 5. Envoyer la Notification par Email
-        # 2. Correction des Arguments de l'action Mail
+        # Correction des Arguments de l'action Mail
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
@@ -68,7 +108,7 @@ jobs:
           subject: "Revue LLM pour PR #${{ github.event.pull_request.number }} par @${{ github.actor }}"
           body: |
             Voici la revue générée par l'IA :
-            ${{ env.LLM_RESPONSE }}
+            ${{ steps.llm_call.outputs.llm_response }} # Utilisation de la sortie de l'étape 3
 
           # 'from' est requis et 'convert_markdown' est le nom correct
           to: ${{ secrets.TEAM_EMAIL_LIST }}
