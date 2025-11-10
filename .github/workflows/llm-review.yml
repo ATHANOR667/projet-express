@@ -24,8 +24,13 @@ jobs:
       - name: 3. Appel à l'IA (Gemini API) et Récupération de la Revue
         id: llm_call
         run: |
+          # Correction : ENCADRER PROMPT AVEC DES GUILLEMETS DOUBLES
           PROMPT="Tu es un relecteur de code expert. Analyse ce diff. Si le code est bon, fournis des pistes d'amélioration. Si le code contient des bugs, liste-les. Réponds en français. Voici le diff: \n\n${{ env.PR_DIFF }}"
+          
+          # SIMULATION DE LA RÉPONSE
           LLM_RESPONSE="Félicitations pour l'ajout de la route. **Point d'amélioration :** Le filtrage par cours devrait être mis en cache pour les requêtes fréquentes."
+          
+          # Stocker la réponse dans une variable d'environnement
           echo "LLM_RESPONSE=$LLM_RESPONSE" >> $GITHUB_ENV
 
       - name: 4. Commenter sur la Pull Request
