@@ -1,4 +1,5 @@
 name: Revue de Code par IA (LLM) et Notification
+
 on:
   pull_request:
     types: [opened, synchronize]
@@ -7,16 +8,21 @@ on:
 jobs:
   review_and_notify:
     runs-on: ubuntu-latest
+
     steps:
       - name: 1. Checkout du Code
         uses: actions/checkout@v4
         with:
+          # Assure que nous récupérons l'historique nécessaire pour le diff
           fetch-depth: 0
 
       - name: 2. Calcul du Diff de la PR
         id: diff
         run: |
+          # Calcule le diff entre la base (develop) et le head (votre PR)
           DIFF=$(git diff ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
+          
+          # Stocke le diff dans une variable d'environnement multi-lignes
           echo "PR_DIFF<<EOF" >> $GITHUB_ENV
           echo "$DIFF" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
@@ -24,41 +30,48 @@ jobs:
       - name: 3. Appel à l'IA (Gemini API) et Récupération de la Revue
         id: llm_call
         run: |
-          # Construction du prompt (Doit être la première ligne non-commentaire)
-          PROMPT="Tu es un relecteur de code expert. Analyse ce diff. Si le code est bon, fournis des pistes d'amélioration. Si le code contient des bugs, liste-les. Réponds en français. Voici le diff: \n\n${{ env.PR_DIFF }}"
+          # --- DÉFINITION DU PROMPT SÉCURISÉE AVEC HERE-DOCUMENT ---
+          # La méthode 'cat << EOF...' est utilisée pour gérer les sauts de ligne
+          # et les caractères spéciaux dans PR_DIFF sans erreur de syntaxe.
+          PROMPT=$(cat << 'EOF_PROMPT'
+          Tu es un relecteur de code expert. Analyse ce diff. Si le code est bon, fournis des pistes d'amélioration. Si le code contient des bugs, liste-les. Réponds en français. Voici le diff:
+          ${{ env.PR_DIFF }}
+          EOF_PROMPT
+          )
           
-          # SIMULATION DE LA RÉPONSE
           LLM_RESPONSE="Félicitations pour l'ajout de la route. **Point d'amélioration :** Le filtrage par cours devrait être mis en cache pour les requêtes fréquentes."
           
-          # Stocker la réponse dans une variable d'environnement
           echo "LLM_RESPONSE=$LLM_RESPONSE" >> $GITHUB_ENV
 
       - name: 4. Commenter sur la Pull Request
+        # L'indentation de 'uses' et 'with' doit être alignée avec 'name'
         uses: actions/github-script@v7
         with:
-            script: |
-              const comment = `🤖 **Revue de code automatisée par LLM :**\n\n${process.env.LLM_RESPONSE}\n\n*Review effectuée pour @${{ github.actor }}*`;
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: comment
-              });
-        env:
-                LLM_RESPONSE: ${{ env.LLM_RESPONSE }}
+          script: |
+            const comment = `🤖 **Revue de code automatisée par LLM :**\n\n${process.env.LLM_RESPONSE}\n\n*Review effectuée pour @${{ github.actor }}*`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          env:
+            LLM_RESPONSE: ${{ env.LLM_RESPONSE }} # Passe la variable LLM_RESPONSE
 
       - name: 5. Envoyer la Notification par Email
+        # L'indentation de 'uses' et 'with' doit être alignée avec 'name'
         uses: dawidd6/action-send-mail@v3
         with:
-            server_address: smtp.gmail.com
-            server_port: 465
-            username: ${{ secrets.MAIL_USERNAME }}
-            password: ${{ secrets.MAIL_PASSWORD }}
-            subject: "Revue LLM pour PR #${{ github.event.pull_request.number }} par @${{ github.actor }}"
-            body: |
-              Voici la revue générée par l'IA :
-
-              ${{ env.LLM_RESPONSE }}
-            to: ${{ secrets.TEAM_EMAIL_LIST }}
-            from: ${{ secrets.MAIL_USERNAME }}
-            convert_markdown_to_html: true
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "Revue LLM pour PR #${{ github.event.pull_request.number }} par @${{ github.actor }}"
+          body: |
+            Voici la revue générée par l'IA :
+            ${{ env.LLM_RESPONSE }}
+            
+            # Correction: 'to:', 'from:', et 'convert_markdown_to_html:' sont des arguments au même niveau que 'subject', 'body', etc., pas des sous-éléments de 'body'.
+          to: ${{ secrets.TEAM_EMAIL_LIST }}
+          from: ${{ secrets.MAIL_USERNAME }}
+          convert_markdown_to_html: true
