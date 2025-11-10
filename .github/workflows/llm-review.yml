@@ -1,0 +1,76 @@
+# .github/workflows/llm-review.yml
+name: Revue de Code par IA (LLM) et Notification
+
+on:
+  pull_request:
+    types: [opened, synchronize] # Déclenchement à l'ouverture ou à la mise à jour de la PR
+    branches:
+      - develop
+
+jobs:
+  review_and_notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. Checkout du Code
+        uses: actions/checkout@v4
+        with:
+          # Récupérer l'historique de la branche cible pour calculer le diff
+          fetch-depth: 0
+
+      - name: 2. Calcul du Diff de la PR
+        id: diff
+        # Utilise une commande Git pour calculer le 'diff' entre la PR et la branche cible (develop)
+        run: |
+          DIFF=$(git diff ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
+          # Stocke le diff dans une variable d'environnement pour l'utiliser plus tard
+          echo "PR_DIFF<<EOF" >> $GITHUB_ENV
+          echo "$DIFF" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: 3. Appel à l'IA (Gemini API) et Récupération de la Revue
+        id: llm_call
+        run: |
+          # Construction du prompt
+          PROMPT="Tu es un relecteur de code expert. Analyse ce diff. Si le code est bon, fournis des pistes d'amélioration. Si le code contient des bugs, liste-les. Réponds en français. Voici le diff: \n\n${{ env.PR_DIFF }}"
+          
+          # Appel à l'API Gemini (Utilisation de curl pour un appel HTTP simple)
+          # REMPLACEMENT: Ici, vous devrez utiliser un script Python/JS ou une action dédiée. 
+          # Pour la démonstration, nous simulons l'appel avec un placeholder.
+          
+          # Exemple théorique d'appel (requiert un script pour gérer JSON et CURL correctement)
+          # L'équipe devra implémenter ce script ou utiliser une action tierce.
+          # LLM_RESPONSE=$(curl -s -X POST "https://gemini.googleapis.com/v1/..." -H "Authorization: Bearer ${{ secrets.GEMINI_API_KEY }}" -d "{...}")
+
+          # SIMULATION DE LA RÉPONSE (À Remplacer)
+          LLM_RESPONSE="Félicitations pour l'ajout de la route. **Point d'amélioration :** Le filtrage par cours devrait être mis en cache pour les requêtes fréquentes."
+          
+          # Stocker la réponse dans une variable d'environnement
+          echo "LLM_RESPONSE=$LLM_RESPONSE" >> $GITHUB_ENV
+
+      - name: 4. Commenter sur la Pull Request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = `🤖 **Revue de code automatisée par LLM :**\n\n${process.env.LLM_RESPONSE}\n\n*Review effectuée pour @${{ github.actor }}*`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          env:
+            LLM_RESPONSE: ${{ env.LLM_RESPONSE }}
+
+      - name: 5. Envoyer la Notification par Email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "Revue LLM pour PR #${{ github.event.pull_request.number }} par @${{ github.actor }}"
+          body: "Voici la revue générée par l'IA :\n\n ${{ env.LLM_RESPONSE }}"
+          to: ${{ secrets.TEAM_EMAIL_LIST }}
+          from: ${{ secrets.MAIL_USERNAME }}
+          # S'assurer que le contenu du mail est pris en compte
+          convert_markdown_to_html: true
