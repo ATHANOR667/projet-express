@@ -24,7 +24,7 @@ jobs:
       - name: 3. Appel à l'IA (Gemini API) et Récupération de la Revue
         id: llm_call
         run: |
-          # Correction : ENCADRER PROMPT AVEC DES GUILLEMETS DOUBLES
+          # Construction du prompt (Doit être la première ligne non-commentaire)
           PROMPT="Tu es un relecteur de code expert. Analyse ce diff. Si le code est bon, fournis des pistes d'amélioration. Si le code contient des bugs, liste-les. Réponds en français. Voici le diff: \n\n${{ env.PR_DIFF }}"
           
           # SIMULATION DE LA RÉPONSE
