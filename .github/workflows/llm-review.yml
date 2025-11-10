@@ -31,29 +31,29 @@ jobs:
       - name: 4. Commenter sur la Pull Request
         uses: actions/github-script@v7
         with:
-          script: |
-            const comment = `🤖 **Revue de code automatisée par LLM :**\n\n${process.env.LLM_RESPONSE}\n\n*Review effectuée pour @${{ github.actor }}*`;
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
-          env:
-            LLM_RESPONSE: ${{ env.LLM_RESPONSE }}
+            script: |
+              const comment = `🤖 **Revue de code automatisée par LLM :**\n\n${process.env.LLM_RESPONSE}\n\n*Review effectuée pour @${{ github.actor }}*`;
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            env:
+                LLM_RESPONSE: ${{ env.LLM_RESPONSE }}
 
       - name: 5. Envoyer la Notification par Email
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: ${{ secrets.MAIL_USERNAME }}
-          password: ${{ secrets.MAIL_PASSWORD }}
-          subject: "Revue LLM pour PR #${{ github.event.pull_request.number }} par @${{ github.actor }}"
-          body: |
-            Voici la revue générée par l'IA :
+            server_address: smtp.gmail.com
+            server_port: 465
+            username: ${{ secrets.MAIL_USERNAME }}
+            password: ${{ secrets.MAIL_PASSWORD }}
+            subject: "Revue LLM pour PR #${{ github.event.pull_request.number }} par @${{ github.actor }}"
+            body: |
+              Voici la revue générée par l'IA :
 
-            ${{ env.LLM_RESPONSE }}
-          to: ${{ secrets.TEAM_EMAIL_LIST }}
-          from: ${{ secrets.MAIL_USERNAME }}
-          convert_markdown_to_html: true
+              ${{ env.LLM_RESPONSE }}
+            to: ${{ secrets.TEAM_EMAIL_LIST }}
+            from: ${{ secrets.MAIL_USERNAME }}
+            convert_markdown_to_html: true
